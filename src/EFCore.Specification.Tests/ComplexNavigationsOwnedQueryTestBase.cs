@@ -281,6 +281,9 @@ namespace Microsoft.EntityFrameworkCore.Specification.Tests
         {
         }
 
+        protected override IQueryable<Level1> GetExpectedLevelOne()
+            => ComplexNavigationsData.SplitLevelOnes.AsQueryable();
+
         protected override IQueryable<Level2> GetExpectedLevelTwo()
             => GetExpectedLevelOne().Select(t => t.OneToOne_Required_PK).Where(t => t != null);
 

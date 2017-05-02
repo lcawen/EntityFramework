@@ -14,6 +14,11 @@ namespace Microsoft.EntityFrameworkCore.Sqlite.FunctionalTests
         {
         }
 
+        public override void Level4_Include()
+        {
+            base.Level4_Include();
+        }
+
         [ConditionalFact(Skip = "issue #4311")]
         public override void Nested_group_join_with_take()
         {
