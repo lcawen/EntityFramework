@@ -2,13 +2,13 @@
   <ItemGroup>
     <!-- SQL Server functional tests which needs SQL connection but no exsting database. -->
     <SqlServerTests Include="$(RepositoryRoot)test\EFCore.SqlServer*FunctionalTests\*.csproj" />
+    <!-- skip the net46 test run on AppVeyor -->
+    <SqlServerTests Update="$(RepositoryRoot)test\EFCore.SqlServer.FunctionalTests\*.csproj" Condition="'$(APPVEYOR)' == 'true'">
+      <AdditionalProperties>TargetFramework=netcoreapp2.0</AdditionalProperties>
+    </SqlServerTests>
   </ItemGroup>
 
   <ItemGroup>
-    <!-- skip the net46 test run on AppVeyor -->
-    <ProjectsToTest Update="$(RepositoryRoot)test\EFCore.SqlServer.FunctionalTests\*.csproj" Condition="'$(APPVEYOR)' == 'true'">
-      <AdditionalProperties>TargetFrameworks=netcoreapp2.0</AdditionalProperties>
-    </ProjectsToTest>
   </ItemGroup>
 
   <Target Name="_FilterTestProjects" BeforeTargets="TestProjects">
