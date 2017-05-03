@@ -8,9 +8,6 @@
     </SqlServerTests>
   </ItemGroup>
 
-  <ItemGroup>
-  </ItemGroup>
-
   <Target Name="_FilterTestProjects" BeforeTargets="TestProjects">
     <ItemGroup Condition="'$(TestGroup)' != ''">
       <ProjectsToTest Remove="@(ProjectsToTest)" Condition="'$(TestGroup)' != 'All'" />
