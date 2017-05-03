@@ -4,14 +4,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Extensions.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using Remotion.Linq.Clauses.Expressions;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Utilities;
-using System.Reflection;
 
 namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
 {
@@ -110,6 +109,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
         /// </summary>
         protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
         {
+            var staticEquals = false;
             Expression leftExpression = null;
             Expression rightExpression = null;
             if (methodCallExpression.Method.Name == nameof(object.Equals)
@@ -124,6 +124,7 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
             {
                 leftExpression = methodCallExpression.Arguments[0];
                 rightExpression = methodCallExpression.Arguments[1];
+                staticEquals = true;
             }
 
             //var objectRootEntityType = QueryCompilationContext.Model.FindEntityType(objectExpression.Type)?.RootType();
@@ -137,18 +138,31 @@ namespace Microsoft.EntityFrameworkCore.Query.ExpressionVisitors.Internal
 
             if (leftExpression != null && rightExpression != null)
             {
+                var newLeftExpression = Visit(leftExpression);
+                var newRightExpression = Visit(rightExpression);
+
+                var isLeftNullConstant = newLeftExpression.IsNullConstantExpression();
+                var isRightNullConstant = newRightExpression.IsNullConstantExpression();
+
+                if (isLeftNullConstant && isRightNullConstant)
+                {
+                    return staticEquals
+                        ? methodCallExpression.Update(null, new[] { newLeftExpression, newRightExpression })
+                        : methodCallExpression.Update(newLeftExpression, new[] { newRightExpression });
+                }
+
                 QuerySourceReferenceExpression leftNavigationQsre;
                 QuerySourceReferenceExpression rightNavigationQsre;
 
                 var leftProperties = MemberAccessBindingExpressionVisitor.GetPropertyPath(
-                    leftExpression, QueryCompilationContext, out leftNavigationQsre);
+                    newLeftExpression, QueryCompilationContext, out leftNavigationQsre);
 
                 var rightProperties = MemberAccessBindingExpressionVisitor.GetPropertyPath(
-                    rightExpression, QueryCompilationContext, out rightNavigationQsre);
+                    newRightExpression, QueryCompilationContext, out rightNavigationQsre);
 
                 var collectionNavigationComparison = TryRewriteCollectionNavigationComparison(
-                    leftExpression,
-                    rightExpression,
+                    newLeftExpression,
+                    newRightExpression,
                     ExpressionType.Equal,
                     leftNavigationQsre,
                     rightNavigationQsre,
